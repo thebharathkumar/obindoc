@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from pathlib import Path
 from statistics import median
 
@@ -6,16 +7,35 @@ import fitz  # PyMuPDF
 
 from grounded_rag.schemas import Chunk
 
+# Trailing footnote markers like "Sector Diversification  5" -> "Sector Diversification".
+_FOOTNOTE_TAIL = re.compile(r"\s+\d{1,2}\s*$")
+
+
+def _normalize_header(text: str) -> str:
+    return _FOOTNOTE_TAIL.sub("", text.strip())
+
+
+_BULLET_CHARS = {"•", "*", "-", "–", "·"}  # bullet, asterisk, hyphen, en dash, middot
+_SENTENCE_PUNCT = {".", ",", ";", ":", "?", "!"}
+
 
 def _is_header(text: str, size: float, flags: int, page_median: float) -> bool:
-    """Heuristic: large font OR bold-and-short."""
+    """Heuristic: large font OR bold-and-short, with sentence/bullet rejections."""
     text = text.strip()
     if not text or len(text) > 80:
         return False
+    if len(text) < 4:
+        return False
+    if text[0] in _BULLET_CHARS:
+        return False
+    if text[-1] in _SENTENCE_PUNCT:
+        return False
+    if text.isupper() and len(text) < 5:
+        return False
     bold = bool(flags & 16)  # PyMuPDF flag bit for bold
-    if size >= 1.2 * page_median:
+    if size >= 1.1 * page_median:
         return True
-    if bold and len(text) <= 60 and not text.endswith(":"):
+    if bold and len(text) <= 60:
         return True
     return False
 
@@ -44,7 +64,7 @@ def _extract_page(page: fitz.Page) -> tuple[str, list[tuple[int, str]]]:
             first_span = line["spans"][0]
             if _is_header(stripped, first_span.get("size", 0.0),
                           first_span.get("flags", 0), page_median):
-                headers.append((len(blob), stripped))
+                headers.append((len(blob), _normalize_header(stripped)))
             blob += line_text + "\n"
     return blob, headers
 

@@ -45,3 +45,19 @@ def test_parse_pdf_finds_known_text() -> None:
     assert "expense ratio" in blob
     assert "vanguard" in blob
     assert "s&p 500" in blob
+
+
+@pytest.mark.skipif(not VOO.exists(), reason="data/voo.pdf not present")
+def test_parse_pdf_section_detection() -> None:
+    chunks = parse_pdf(VOO)
+    sections = {c.section for c in chunks}
+    # Real sections must be detected.
+    assert "Quick facts" in sections
+    assert "Sector Diversification" in sections
+    # Bullets and tickers must NOT become section headers.
+    for bad in [
+        "• Seeks to track the performance of the S&P 500 Index.",
+        "VOO",
+        "consider it carefully before investing.",
+    ]:
+        assert bad not in sections, f"unexpected section header: {bad!r}"
