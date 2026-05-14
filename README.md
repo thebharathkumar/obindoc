@@ -93,4 +93,4 @@ The spec names `claude-sonnet-4-5`. Set `ANTHROPIC_MODEL` in `.env` to override 
 - **No re-ranker.** A cross-encoder pass (for example `ms-marco-MiniLM-L-6-v2`) over the top-20 candidates would meaningfully improve top-5 precision before generation.
 - **Single-hop only.** No follow-up retrieval. Multi-hop questions ("how did sector X change between two filings?") would require a planning loop and a second retrieval call.
 - **Eval is canned.** Five questions over one PDF is enough for a demo. A real harness needs labeled gold spans and span-overlap F1 instead of generation_confidence as the headline metric.
-- **Verifier is a Claude call.** Faster, cheaper alternatives: NLI models, exact-string-overlap checks for numeric facts. The Claude call is the most flexible and lets us defer the precision/cost tradeoff.
+- **Verifier is a Claude call when the cited snippet is found in retrieved context; otherwise it short-circuits to grounded=False at confidence 0.9.** Faster, cheaper alternatives for the Claude branch: NLI models, exact-string-overlap checks for numeric facts. The Claude call is the most flexible and lets us defer the precision/cost tradeoff.
