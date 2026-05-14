@@ -72,6 +72,15 @@ pytest -v
 
 The first `index` run downloads the `all-MiniLM-L6-v2` embedding model (~80MB) from Hugging Face. The `ask` and `eval` commands need a live `ANTHROPIC_API_KEY`. The tests do not (they use a fake client and a deterministic hashing encoder).
 
+If Hugging Face is unreachable (corporate proxy, air-gapped CI), drop the equivalent ONNX weights into `.onnx_cache/onnx/` and the retriever will use them automatically:
+
+```bash
+mkdir -p .onnx_cache
+curl -sL https://chroma-onnx-models.s3.amazonaws.com/all-MiniLM-L6-v2/onnx.tar.gz \
+  | tar -xz -C .onnx_cache
+pip install onnxruntime tokenizers
+```
+
 ## Model note
 
 The spec names `claude-sonnet-4-5`. Set `ANTHROPIC_MODEL` in `.env` to override without code changes (e.g. to `claude-sonnet-4-6`).

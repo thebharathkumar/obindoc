@@ -10,6 +10,7 @@ import numpy as np
 from grounded_rag.schemas import Chunk, RetrievedChunk
 
 EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+ONNX_CACHE_DIR = Path(".onnx_cache/onnx")
 _STOPWORDS = {"the", "a", "an", "of", "is", "what", "which", "in", "to", "for",
               "by", "and", "or", "as", "at", "on", "with", "are", "be", "this"}
 
@@ -41,6 +42,48 @@ class _SentenceTransformerEncoder:
         return vecs.astype("float32")
 
 
+class _OnnxMiniLmEncoder:
+    """Local ONNX runtime for all-MiniLM-L6-v2.
+
+    Used when the Hugging Face Hub is unreachable. Expects a directory laid out
+    like Chroma's published tarball: model.onnx + tokenizer.json next to each other.
+    Same embedding space as the SentenceTransformers version.
+    """
+
+    def __init__(self, model_dir: Path = ONNX_CACHE_DIR) -> None:
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+        self._sess = ort.InferenceSession(str(model_dir / "model.onnx"))
+        self._tok = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+        self._tok.enable_truncation(max_length=256)
+        self._tok.enable_padding()
+
+    def __call__(self, texts: list[str]) -> np.ndarray:
+        encs = self._tok.encode_batch(texts)
+        ids = np.array([e.ids for e in encs], dtype=np.int64)
+        mask = np.array([e.attention_mask for e in encs], dtype=np.int64)
+        ttype = np.zeros_like(ids)
+        hidden = self._sess.run(
+            None,
+            {"input_ids": ids, "attention_mask": mask, "token_type_ids": ttype},
+        )[0]
+        mask_f = mask[..., None].astype(np.float32)
+        summed = (hidden * mask_f).sum(axis=1)
+        counts = mask_f.sum(axis=1)
+        counts[counts == 0] = 1.0
+        pooled = summed / counts
+        norms = np.linalg.norm(pooled, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return (pooled / norms).astype("float32")
+
+
+def _default_encoder() -> Encoder:
+    """Prefer local ONNX cache (no network), else lazy SentenceTransformer."""
+    if ONNX_CACHE_DIR.exists() and (ONNX_CACHE_DIR / "model.onnx").exists():
+        return _OnnxMiniLmEncoder(ONNX_CACHE_DIR)
+    return _SentenceTransformerEncoder()
+
+
 class Retriever:
     """In-memory FAISS retriever with section keyword boost.
 
@@ -49,7 +92,7 @@ class Retriever:
     """
 
     def __init__(self, encoder: Encoder | None = None) -> None:
-        self._encoder: Encoder = encoder or _SentenceTransformerEncoder()
+        self._encoder: Encoder = encoder or _default_encoder()
         self._index: faiss.Index | None = None
         self._chunks: list[Chunk] = []
 

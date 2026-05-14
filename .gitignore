@@ -6,6 +6,7 @@ venv/
 *.egg-info/
 .pytest_cache/
 .faiss_cache/
+.onnx_cache/
 *.faiss
 *.npy
 # trace files are committed except local dev runs
