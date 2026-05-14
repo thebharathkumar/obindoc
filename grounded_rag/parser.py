@@ -130,4 +130,14 @@ def parse_pdf(path: Path) -> list[Chunk]:
             current_section = name
             last_off = off
     doc.close()
-    return [c for c in all_chunks if c.text.strip() != c.section.strip()]
+    return [c for c in all_chunks if not _is_header_only(c)]
+
+
+def _is_header_only(chunk: Chunk) -> bool:
+    text = chunk.text.strip()
+    section = chunk.section.strip()
+    if text == section:
+        return True
+    if text.startswith(section) and len(text) - len(section) < 40:
+        return True
+    return False

@@ -51,9 +51,14 @@ def test_parse_pdf_finds_known_text() -> None:
 def test_parse_pdf_drops_header_only_chunks() -> None:
     chunks = parse_pdf(VOO)
     for c in chunks:
-        assert c.text.strip() != c.section.strip(), (
-            f"chunk {c.chunk_id} is just its header: {c.text!r}"
-        )
+        text = c.text.strip()
+        section = c.section.strip()
+        assert text != section, f"chunk {c.chunk_id} is just its header: {text!r}"
+        # Header + short tail (page banner, ticker, date) must also be filtered.
+        if text.startswith(section):
+            assert len(text) - len(section) >= 40, (
+                f"chunk {c.chunk_id} is header + {len(text) - len(section)}-char tail: {text!r}"
+            )
 
 
 @pytest.mark.skipif(not VOO.exists(), reason="data/voo.pdf not present")
