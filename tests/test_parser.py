@@ -48,6 +48,15 @@ def test_parse_pdf_finds_known_text() -> None:
 
 
 @pytest.mark.skipif(not VOO.exists(), reason="data/voo.pdf not present")
+def test_parse_pdf_drops_header_only_chunks() -> None:
+    chunks = parse_pdf(VOO)
+    for c in chunks:
+        assert c.text.strip() != c.section.strip(), (
+            f"chunk {c.chunk_id} is just its header: {c.text!r}"
+        )
+
+
+@pytest.mark.skipif(not VOO.exists(), reason="data/voo.pdf not present")
 def test_parse_pdf_section_detection() -> None:
     chunks = parse_pdf(VOO)
     sections = {c.section for c in chunks}

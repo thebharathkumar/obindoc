@@ -130,4 +130,4 @@ def parse_pdf(path: Path) -> list[Chunk]:
             current_section = name
             last_off = off
     doc.close()
-    return all_chunks
+    return [c for c in all_chunks if c.text.strip() != c.section.strip()]
