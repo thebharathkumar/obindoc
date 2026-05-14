@@ -80,8 +80,7 @@ def build_graph(retriever: Retriever, logger: ChainedLogger,
 
     def node_verify(state: _State) -> _State:
         start = _now()
-        chunks_by_page = {r.chunk.page: r.chunk for r in state["retrieved"]}
-        results = verify_all(state["generation"].claims, chunks_by_page, client=client)
+        results = verify_all(state["generation"].claims, state["retrieved"], client=client)
         end = _now()
         emit(
             state, "verify", parent="generate", span_id="verify",
