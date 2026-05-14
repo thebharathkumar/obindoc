@@ -1,6 +1,6 @@
 # Grounded RAG over a Single PDF
 
-A small, sharp RAG system over `data/voo.pdf` (a Vanguard VOO fact sheet) that demonstrates two ideas at production quality: span-level grounding with a verifier loop, and full agent observability via a tamper-evident audit log. About 500 lines total, focused on doing two things well.
+A small, sharp RAG system over `data/voo.pdf` (a Vanguard VOO fact sheet) that demonstrates two ideas at production quality: span-level grounding with a verifier loop, and full agent observability via a tamper-evident audit log. Under 900 lines of source, focused on doing two things well.
 
 ## The two questions this answers
 
@@ -30,6 +30,8 @@ Two confidence signals are exposed end to end:
 - **generation_confidence** = mean verifier confidence across claims. The verifier is a separate Claude call that sees only the claim, the snippet, and the source chunk, and returns `{grounded, reason, confidence}`.
 
 The generator is constrained to a strict JSON schema and is instructed to set `citation: null` rather than invent. The verifier marks any claim without a citation as ungrounded with confidence 0.0.
+
+The verifier requires the cited snippet to appear verbatim in a retrieved chunk. Paraphrased citations are flagged as `[unverified]` with reason "snippet not found in retrieved context." Sample 4 (10-year return) demonstrates this: one claim grounded verbatim, three flagged where the generator paraphrased numeric values. This is the intended honest-failure signal, not a false negative to suppress.
 
 ## Observability design
 
