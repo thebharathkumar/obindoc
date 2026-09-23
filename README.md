@@ -1,5 +1,12 @@
 # Grounded RAG over a Single PDF
 
+<!-- brag:start -->
+<p align="center">
+  <a href="https://github.com/thebharathkumar/obindoc/blob/HEAD/docs/brag/obindoc.mp4"><img src="https://raw.githubusercontent.com/thebharathkumar/obindoc/HEAD/docs/brag/obindoc.gif" alt="obindoc: 15-second technical brief" width="100%"></a>
+</p>
+<p align="center"><sub>15-second technical brief. <a href="https://github.com/thebharathkumar/obindoc/blob/HEAD/docs/brag/obindoc.mp4">Full MP4 with sound</a> &middot; more at <a href="https://thebharath.co">thebharath.co</a></sub></p>
+<!-- brag:end -->
+
 A small, sharp RAG system over `data/voo.pdf` (a Vanguard VOO fact sheet) that demonstrates two ideas at production quality: span-level grounding with a verifier loop, and full agent observability via a tamper-evident audit log. Under 900 lines of source, focused on doing two things well.
 
 ## The two questions this answers
